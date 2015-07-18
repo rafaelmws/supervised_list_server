@@ -1,5 +1,3 @@
-import Supervisor.Spec
-
 defmodule ListManager do
   use GenServer
 
