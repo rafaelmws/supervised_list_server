@@ -26,19 +26,25 @@ defmodule ListServer do
   end
 
   ##### gen_server
-  def init do
-    {:ok, []}
+  def init(name) do
+    IO.puts "ListServer.init(#{name})"
+    ListManager.register(name, self())
+    {:ok, {name, []}}
   end
 
-  def handle_cast(:clear, _list) do
+  def terminate(_reason, {name, _list}) do
+    ListManager.unregister(name, self())
+  end
+
+  def handle_cast(:clear, {_name, _list}) do
     {:noreply, []}
   end
 
-  def handle_cast({:add, item}, list) do
+  def handle_cast({:add, item}, {_name, list}) do
     {:noreply, list ++ [item]}
   end
 
-  def handle_cast({:remove, item}, list) do
+  def handle_cast({:remove, item}, {_name, list}) do
     {:noreply, List.delete(list, item)}
   end
 
@@ -46,7 +52,7 @@ defmodule ListServer do
     1 = 2
   end
 
-  def handle_call(:items, _from, list) do
+  def handle_call(:items, _from, {_name, list}) do
     {:reply, list, list}
   end
 

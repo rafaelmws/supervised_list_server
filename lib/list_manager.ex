@@ -20,17 +20,17 @@ defmodule ListManager do
   end
 
   def register(name, pid) do
-    GenServer.call :list_manager, {:register, name, pid}
+    :gen_server.cast :list_manager, {:register, name, pid}
   end
 
   def unregister(name) do
-    GenServer.call :list_manager, {:unregister, name}
+    :gen_server.cast :list_manager, {:unregister, name}
   end
 
   #server api
-  def init(pid) do
+  def init(supervisor_pid) do
     new_state = %{
-      supervisor: pid,
+      supervisor: supervisor_pid,
       servers: []
     }
 
@@ -44,30 +44,32 @@ defmodule ListManager do
 
   def handle_cast({:stop, server_name}, state) do
     {:ok, server} = find_server(state, server_name)
-    ListSupervisor.stop_server(state[:supervisor], server[:pid], server[:name])
+    ListSupervisor.stop_server(state[:supervisor], server[:pid])
     {:noreply, state}
   end
 
   def handle_cast({:register, name, pid}, state) do
-    {:noreply, add_server(state, name, pid)}
+    result  = add_server(state, name, pid)
+    {:noreply, result}
   end
 
   def handle_cast({:unregister, name}, state) do
-    {:noreply, remove_server(state, name)}
+    result = remove_server(state, name)
+    {:noreply, result}
   end
 
   def handle_call(:list, _from, state) do
     {:reply, state, state}
   end
 
-  defp add_server(state, name, pid) do
+  def add_server(state, name, pid) do
     %{
       supervisor: state[:supervisor],
       servers: state[:servers] ++ [%{name: name, pid: pid}]
     }
   end
 
-  defp remove_server(state, name) do
+  def remove_server(state, name) do
     %{
       supervisor: state[:supervisor],
       servers: state[:servers] |> Enum.filter fn (item) -> item[:name] != name end

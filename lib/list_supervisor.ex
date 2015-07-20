@@ -13,14 +13,13 @@ defmodule ListSupervisor do
   end
 
   def start_server(supervisor, name) do
-    {:ok, pid} = Supervisor.start_child(supervisor, [name])
-    ListManager.register(name, pid)
+    IO.puts "ListSupervisor.start_server(#{name})"
+    Supervisor.start_child(supervisor, name)
   end
 
-  def stop_server(supervisor, pid, name) do
+  def stop_server(supervisor, pid) do
     Supervisor.delete_child(supervisor, pid)
     Supervisor.terminate_child(supervisor, pid)
-    ListManager.unregister(supervisor, name)
   end
 
 end
