@@ -1,9 +1,15 @@
+import Supervisor.Spec
+
 defmodule ListManager do
   use GenServer
 
   #public api
   def start_link do
-    {:ok, sup} = ListSupervisor.start_link
+    children = [
+      worker(ListServer, [], restart: :permanent)
+    ]
+
+    {:ok, sup} = Supervisor.start_link(children, strategy: :simple_one_for_one)
     :gen_server.start_link({:local, :list_manager}, __MODULE__, sup, [])
   end
 
@@ -38,22 +44,25 @@ defmodule ListManager do
   end
 
   def handle_cast({:start, server_name}, state) do
-    ListSupervisor.start_server(state[:supervisor], server_name)
+    Supervisor.start_child(state[:supervisor], [server_name])
     {:noreply, state}
   end
 
   def handle_cast({:stop, server_name}, state) do
     {:ok, server} = find_server(state, server_name)
-    ListSupervisor.stop_server(state[:supervisor], server[:pid])
+    Supervisor.delete_child(state[:supervisor], server[:pid])
+    Supervisor.terminate_child(state[:supervisor], server[:pid])
     {:noreply, state}
   end
 
   def handle_cast({:register, name, pid}, state) do
+    IO.puts "[handle_cast]ListManager.register(#{name})"
     result  = add_server(state, name, pid)
     {:noreply, result}
   end
 
   def handle_cast({:unregister, name}, state) do
+    IO.puts "ListServer.unregister(#{name})"
     result = remove_server(state, name)
     {:noreply, result}
   end

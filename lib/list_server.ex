@@ -2,7 +2,7 @@ defmodule ListServer do
   use GenServer
 
   def start_link(process_name) do
-    :gen_server.start_link({:local, process_name}, __MODULE__, [], [])
+    :gen_server.start_link({:local, process_name}, __MODULE__, {process_name, []}, [])
   end
 
   def clear(process_name) do
@@ -27,24 +27,23 @@ defmodule ListServer do
 
   ##### gen_server
   def init(name) do
-    IO.puts "ListServer.init(#{name})"
     ListManager.register(name, self())
-    {:ok, {name, []}}
+    {:ok, []}
   end
 
-  def terminate(_reason, {name, _list}) do
-    ListManager.unregister(name, self())
+  def terminate(_reason, _list) do
+    ListManager.unregister(self())
   end
 
-  def handle_cast(:clear, {_name, _list}) do
+  def handle_cast(:clear, _list) do
     {:noreply, []}
   end
 
-  def handle_cast({:add, item}, {_name, list}) do
+  def handle_cast({:add, item}, list) do
     {:noreply, list ++ [item]}
   end
 
-  def handle_cast({:remove, item}, {_name, list}) do
+  def handle_cast({:remove, item}, list) do
     {:noreply, List.delete(list, item)}
   end
 
@@ -52,7 +51,7 @@ defmodule ListServer do
     1 = 2
   end
 
-  def handle_call(:items, _from, {_name, list}) do
+  def handle_call(:items, _from, list) do
     {:reply, list, list}
   end
 
